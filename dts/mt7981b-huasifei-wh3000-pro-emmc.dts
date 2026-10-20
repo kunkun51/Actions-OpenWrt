@@ -1,0 +1,217 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/leds/common.h>
+
+#include "mt7981b.dtsi"
+
+/ {
+	model = "Huasifei WH3000 Pro";
+	compatible = "huasifei,wh3000-pro", "mediatek,mt7981";
+
+	aliases {
+		serial0 = &uart0;
+		label-mac-device = &lan;
+
+		led-boot = &led_sys;
+		led-failsafe = &led_sys;
+		led-running = &led_sys;
+		led-upgrade = &led_sys;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
+
+	gpio-keys {
+		compatible = "gpio-keys";
+
+		reset {
+			label = "reset";
+			gpios = <&pio 38 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_RESTART>;
+			debounce-interval = <60>;
+		};
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		led_sys: led-sys {
+			color = <LED_COLOR_ID_BLUE>;
+			function = LED_FUNCTION_STATUS;
+			gpios = <&pio 44 GPIO_ACTIVE_LOW>;
+		};
+	};
+
+	fan {
+		compatible = "pwm-fan";
+		pwms = <&pwm 0 25000 0>;
+		cooling-levels = <0 64 128 255>;
+	};
+};
+
+&pwm {
+	status = "okay";
+};
+
+&eth {
+	status = "okay";
+
+	gmac0: mac@0 {
+		compatible = "mediatek,eth-mac";
+		reg = <0>;
+		phy-mode = "2500base-x";
+
+		nvmem-cell-names = "mac-address";
+		nvmem-cells = <&macaddr_factory_4>;
+
+		fixed-link {
+			speed = <2500>;
+			full-duplex;
+			pause;
+		};
+	};
+};
+
+&mdio_bus {
+	switch: switch@1f {
+		compatible = "mediatek,mt7531";
+		reg = <0x1f>;
+		reset-gpios = <&pio 39 GPIO_ACTIVE_HIGH>;
+		interrupt-controller;
+		#interrupt-cells = <1>;
+		interrupt-parent = <&pio>;
+		interrupts = <38 IRQ_TYPE_LEVEL_HIGH>;
+	};
+};
+
+&emmc {
+	status = "okay";
+
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		partition@0 {
+			label = "boot_preloader";
+			reg = <0x0 0x80000>;
+			read-only;
+		};
+
+		partition@80000 {
+			label = "boot";
+			reg = <0x80000 0x180000>;
+			read-only;
+		};
+
+		partition@200000 {
+			label = "u-boot-env";
+			reg = <0x200000 0x80000>;
+		};
+
+		partition@280000 {
+			label = "Factory";
+			reg = <0x280000 0x200000>;
+			read-only;
+
+			nvmem-layout {
+				compatible = "fixed-layout";
+				#address-cells = <1>;
+				#size-cells = <1>;
+
+				eeprom_factory_0: eeprom@0 {
+					reg = <0x0 0x1000>;
+				};
+
+				macaddr_factory_4: macaddr@4 {
+					compatible = "mac-base";
+					reg = <0x4 0x6>;
+					#nvmem-cell-cells = <1>;
+				};
+			};
+		};
+
+		partition@480000 {
+			label = "fip";
+			reg = <0x480000 0x200000>;
+			read-only;
+		};
+
+		partition@680000 {
+			label = "rootfs";
+			reg = <0x680000 0x77800000>;
+		};
+	};
+};
+
+&switch {
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		wan: port@0 {
+			reg = <0>;
+			label = "wan";
+			nvmem-cell-names = "mac-address";
+			nvmem-cells = <&macaddr_factory_4 1>;
+		};
+
+		lan: port@1 {
+			reg = <1>;
+			label = "lan";
+			nvmem-cell-names = "mac-address";
+			nvmem-cells = <&macaddr_factory_4 3>;
+		};
+
+		port@6 {
+			reg = <6>;
+			ethernet = <&gmac0>;
+			phy-mode = "2500base-x";
+			fixed-link {
+				speed = <2500>;
+				full-duplex;
+				pause;
+			};
+		};
+	};
+};
+
+&pio {
+	uart0_pins: uart0-pins {
+		mux {
+			function = "uart";
+			groups = "uart0";
+		};
+	};
+};
+
+&uart0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart0_pins>;
+	status = "okay";
+};
+
+&usb {
+	status = "okay";
+};
+
+&wifi {
+	status = "okay";
+	nvmem-cell-names = "eeprom";
+	nvmem-cells = <&eeprom_factory_0>;
+
+	band@0 {
+		reg = <0>;
+		nvmem-cell-names = "mac-address";
+		nvmem-cells = <&macaddr_factory_4 0>;
+	};
+
+	band@1 {
+		reg = <1>;
+		nvmem-cell-names = "mac-address";
+		nvmem-cells = <&macaddr_factory_4 2>;
+	};
+};
