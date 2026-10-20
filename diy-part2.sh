@@ -21,23 +21,8 @@
 
 # diy-part2.sh
 
-# 2. 在 filogic.mk 末尾追加 WH3000 Pro eMMC 设备定义
-cp -rf $GITHUB_WORKSPACE/dts/* target/linux/mediatek/dts/
+# WH3000 Pro(eMMC) 已由 OpenWrt 官方原生支持（target/linux/mediatek/image/filogic.mk），
+# 构建源已切换为 openwrt/openwrt(main)，无需再追加自定义设备定义或拷贝 DTS。
+# 直接在 .config 中选中 CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_huasifei_wh3000-pro-emmc 即可。
 
-cat >> target/linux/mediatek/image/filogic.mk << EOF
-
-define Device/huasifei_wh3000-pro-emmc
-  DEVICE_VENDOR := Huasifei
-  DEVICE_MODEL := WH3000 Pro eMMC
-  DEVICE_DTS := mt7981b-huasifei-wh3000-pro-emmc
-  DEVICE_DTS_PATH := $(TOPDIR)/target/linux/mediatek/dts
-  SUPPORTED_DEVICES += huasifei,wh3000-pro
-  IMAGE_SIZE := 122880k
-  IMAGES := sysupgrade.itb
-  IMAGE/sysupgrade.itb := append-kernel | fit | append-rootfs | pad-to 64k | append-metadata
-  DEVICE_PACKAGES := kmod-mt7915e kmod-mt7981-firmware mt7981-wo-firmware kmod-hwmon-pwmfan kmod-usb3
-endef
-TARGET_DEVICES += huasifei_wh3000-pro-emmc
-
-EOF
 
